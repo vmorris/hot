@@ -1,0 +1,93 @@
+heat_template_version: 2016-04-08
+
+description: Simple template to deploy a single trove and an additional instance.
+
+resources:
+
+  trove1_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: provider-vlan1314
+
+  trove1_port:
+    type: OS::Neutron::Port
+    properties:
+      network: soltest-self_service_2
+      fixed_ips:
+        - subnet_id: self-service-subnet-2
+
+  instance1_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: provider-vlan1314
+
+  instance1_port:
+    type: OS::Neutron::Port
+    properties:
+      network: soltest-self_service_2
+      fixed_ips:
+        - subnet_id: self-service-subnet-2
+
+  all_access_secgroup:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      rules:
+        - protocol: tcp
+          remote_ip_prefix: 0.0.0.0/0
+          port_range_min: 1
+          port_range_max: 65535
+        - protocol: udp
+          remote_ip_prefix: 0.0.0.0/0
+          port_range_min: 1
+          port_range_max: 65535
+        - protocol: icmp
+          remote_ip_prefix: 0.0.0.0/0
+          port_range_min: 0
+          port_range_max: 255
+
+  trove1:
+    type: OS::Trove::Instance
+    properties:
+      flavor: s390x10G
+      size: 10
+      databases: [{"name": testdb}]
+      datastore_type: postgresql
+      datastore_version: postgresql-9.5
+      name: vem-heat-trove-pg-1
+      networks: [{"network": soltest-self_service_2, "port": { get_resource: trove1_port }}]
+      users: [{"name": test, "password": test, "databases": [testdb]}]
+
+  instance1:
+    type: OS::Nova::Server
+    properties:
+      key_name: vmorris_xzc139u13
+      image: SolTest SLES 12 SP2 20170223
+      flavor: s390x10G
+      security_groups:
+        - default
+        - { get_resource: all_access_secgroup }
+      networks:
+        - port: { get_resource: instance1_port }
+
+  trove1_floating_ip_association:
+    type: OS::Nova::FloatingIPAssociation
+    properties:
+      floating_ip: { get_resource: trove1_floating_ip }
+      server_id: { get_resource: trove1 }
+
+  instance1_floating_ip_association:
+    type: OS::Nova::FloatingIPAssociation
+    properties:
+      floating_ip: { get_resource: instance1_floating_ip }
+      server_id: { get_resource: instance1 }
+
+outputs:
+  instance1_floating_ip_output:
+    description: The floating IP address of instance1.
+    value: { get_attr: [instance1_floating_ip, floating_ip_address] }
+
+  trove1_floating_ip_output:
+    description: The floating IP address of trove1.
+    value: { get_attr: [trove1_floating_ip, floating_ip_address] }
+
+

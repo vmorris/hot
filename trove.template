@@ -1,0 +1,20 @@
+heat_template_version: 2015-04-30
+
+description: Simple template to deploy a single trove instance
+
+resources:
+  my_instance:
+    type: OS::Trove::Instance
+    properties:
+      availability_zone: String
+      databases: [{"character_set": String, "name": String, "collate": String}, {"character_set": String, "name": String, "collate": String}, ...]
+      datastore_type: String
+      datastore_version: String
+      flavor: String
+      name: String
+      networks: [{"network": String, "port": String, "fixed_ip": String}, {"network": String, "port": String, "fixed_ip": String}, ...]
+      replica_count: Integer
+      replica_of: String
+      restore_point: String
+      size: Integer
+      users: [{"name": String, "password": String, "databases": [String, String, ...], "host": String}, {"name": String, "password": String, "databases": [String, String, ...], "host": String}, ...]
